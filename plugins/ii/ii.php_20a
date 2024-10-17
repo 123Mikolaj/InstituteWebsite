@@ -1,0 +1,254 @@
+<?php
+/*
+Plugin Name: Instytut Informatyki
+Plugin URI: https://ii.uken.krakow.pl
+Description: Wtyczka dedykowana dla II
+Version: 1.0
+Author: Estarte
+License: GNU
+*/
+
+function ii_register_post_types(){
+	$labels = array(
+        'name'                => 'Pracownicy',
+        'singular_name'       => 'Pracownik',
+        'menu_name'           => 'Pracownicy',
+        'parent_item_colon'   => 'Nadrzędna',
+        'all_items'           => 'Wszyscy',
+        'view_item'           => 'Zobacz',
+        'add_new_item'        => 'Dodaj',
+        'add_new'             => 'Dodaj',
+        'edit_item'           => 'Edytuj',
+        'update_item'         => 'Aktualizuj',
+        'search_items'        => 'Szukaj',
+        'not_found'           => 'Nie znaleziono',
+        'not_found_in_trash'  => 'Nie znaleziono'
+    );
+
+    $args = array(
+        'label' => 'pracownik',
+        'rewrite' => array(
+            'slug' => 'pracownik'
+        ),
+        'description'         => 'Pracownicy',
+        'labels'              => $labels,
+        'supports'            => array( 'title','editor','thumbnail'),
+        'taxonomies'          => array(),
+        'hierarchical'        => false,
+        'public'              => true, 
+        'show_ui'             => true,
+        'show_in_menu'        => true,
+        'show_in_nav_menus'   => true,
+        'show_in_admin_bar'   => true,
+        'menu_position'       => 8,
+        'menu_icon'           => 'dashicons-groups',
+        'can_export'          => true,
+        'has_archive'         => false,
+        'exclude_from_search' => false,
+        'publicly_queryable'  => true,
+        'map_meta_cap'    	  => true
+
+    );
+    register_post_type( 'pracownik', $args );
+}
+add_action( 'init', 'ii_register_post_types', 0 );
+
+function ii_pracownik_meta_box(){
+	add_meta_box('ii-pracownik','Dane pracownika','ii_pracownik_meta_box_callback');
+}
+
+function ii_pracownik_meta_box_callback($post) {
+    $post_meta = get_post_meta($post->ID);
+    $academic_titles = array('', 'lic.', 'mgr', 'inż.', 'mgr inż.', 'dr', 'dr hab.', 'prof.');
+    $types = array('', 'naukowy', 'administracyjny');
+    $positions = array('', 'dyrektor', 'zastępca', 'sekretariat', 'obsługa techniczna');
+    $structure_positions = array('', 'kierownik');
+
+    $current_academic_title = isset($post_meta['ii_academic_title'][0]) ? $post_meta['ii_academic_title'][0] : '';
+    $posttitle = isset($post_meta['ii_posttitle'][0]) ? $post_meta['ii_posttitle'][0] : '';
+    $current_type = isset($post_meta['ii_type'][0]) ? $post_meta['ii_type'][0] : '';
+    $email = isset($post_meta['ii_email'][0]) ? $post_meta['ii_email'][0] : '';
+    $phone_number = isset($post_meta['ii_phone_number'][0]) ? $post_meta['ii_phone_number'][0] : '';
+    $room = isset($post_meta['ii_room'][0]) ? $post_meta['ii_room'][0] : '';
+    $sort = isset($post_meta['ii_sort'][0]) ? $post_meta['ii_sort'][0] : '';
+    $current_position = isset($post_meta['ii_position'][0]) ? $post_meta['ii_position'][0] : '';
+    $current_structure_position = isset($post_meta['ii_structure_position'][0]) ? $post_meta['ii_structure_position'][0] : '';
+
+    ?>
+    <div>
+        <label>Tytuł</label><br>
+        <select name="ii_academic_title">
+            <?php foreach ($academic_titles as $academic_title) : ?>
+                <option value="<?php echo esc_attr($academic_title); ?>" <?php selected($current_academic_title, $academic_title); ?>>
+                    <?php echo esc_html($academic_title); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div>
+        <label>Tytuł dodatkowy</label><br>
+        <input type="text" name="ii_posttitle" value="<?php echo esc_attr($posttitle); ?>">
+    </div>
+    <div>
+        <label>Typ pracownika</label><br>
+        <select name="ii_type">
+            <?php foreach ($types as $type) : ?>
+                <option value="<?php echo esc_attr($type); ?>" <?php selected($current_type, $type); ?>>
+                    <?php echo esc_html($type); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div>
+        <label>Email</label><br>
+        <input type="text" name="ii_email" value="<?php echo esc_attr($email); ?>">
+    </div>
+    <div>
+        <label>Telefon</label><br>
+        <input type="text" name="ii_phone_number" value="<?php echo esc_attr($phone_number); ?>">
+    </div>
+    <div>
+        <label>Pokój</label><br>
+        <input type="text" name="ii_room" value="<?php echo esc_attr($room); ?>">
+    </div>
+    <div>
+        <label>Sortowanie</label><br>
+        <input type="text" name="ii_sort" value="<?php echo esc_attr($sort); ?>">
+    </div>
+    <div>
+        <label>Stanowisko</label><br>
+        <select name="ii_position">
+            <?php foreach ($positions as $position) : ?>
+                <option value="<?php echo esc_attr($position); ?>" <?php selected($current_position, $position); ?>>
+                    <?php echo esc_html($position); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div>
+        <label>Stanowisko w strukturze</label><br>
+        <select name="ii_structure_position">
+            <?php foreach ($structure_positions as $structure_position) : ?>
+                <option value="<?php echo esc_attr($structure_position); ?>" <?php selected($current_structure_position, $structure_position); ?>>
+                    <?php echo esc_html($structure_position); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <?php
+    // posttitle np: dr hab. Mateusz Muchacki, prof. UKEN
+    // sort - sortowanie
+    // type (naukowy, administracyjny)
+    // stanowisko (dyrektor, zastępca, sekretariat, obsługa techniczna)
+    // stanowisko w strukturze (kierownik)
+}
+
+function ii_pracownik_meta_box_save($id_post){
+	if(isset($_POST['ii_academic_title'])){
+		update_post_meta($id_post,'ii_academic_title',$_POST['ii_academic_title']);
+	}
+    if(isset($_POST['ii_posttitle'])){
+		update_post_meta($id_post,'ii_posttitle',$_POST['ii_posttitle']);
+	}
+    if(isset($_POST['ii_type'])){
+		update_post_meta($id_post,'ii_type',$_POST['ii_type']);
+	}
+    if(isset($_POST['ii_email'])){
+        update_post_meta($id_post, 'ii_email', $_POST['ii_email']);
+    }
+    if(isset($_POST['ii_phone_number'])){
+        update_post_meta($id_post, 'ii_phone_number', $_POST['ii_phone_number']);
+    }
+    if(isset($_POST['ii_room'])){
+        update_post_meta($id_post, 'ii_room', $_POST['ii_room']);
+    }
+    if(isset($_POST['ii_sort'])){
+        update_post_meta($id_post, 'ii_sort', $_POST['ii_sort']);
+    }
+    if(isset($_POST['ii_position'])){
+        update_post_meta($id_post, 'ii_position', $_POST['ii_position']);
+    }
+    if(isset($_POST['ii_structure_position'])){
+        update_post_meta($id_post, 'ii_structure_position', $_POST['ii_structure_position']);
+    }
+}
+add_action( 'add_meta_boxes_pracownik', 'ii_pracownik_meta_box' );
+add_action('save_post','ii_pracownik_meta_box_save');
+// shortcode pracownik
+function ii_pracownik_shortcode(){
+    //
+    global $post; 
+    $title=get_the_title($post->ID);
+    $meta = get_post_meta($post->ID);
+
+    $academic_title = isset($meta['ii_academic_title'][0]) ? $meta['ii_academic_title'][0] : '';
+    $posttitle = isset($meta['ii_posttitle'][0]) ? $meta['ii_posttitle'][0] : '';
+    $email = isset($meta['ii_email'][0]) ? $meta['ii_email'][0] : '';
+    $phone_number = isset($meta['ii_phone_number'][0]) ? $meta['ii_phone_number'][0] : '';
+    $room = isset($meta['ii_room'][0]) ? $meta['ii_room'][0] : '';
+
+    $structure_terms = wp_get_post_terms($post->ID, 'structure');
+    $structure = !is_wp_error($structure_terms) && !empty($structure_terms) ? $structure_terms[0]->name : '';
+    
+    $text = '<div class="worker-item">
+    <div class="worker-img-cnt">
+        <figure class="worker-img">
+            <span class="avatar-img"></span>
+            <!-- <img src="" alt=""> -->
+        </figure>
+    </div>
+    <div class="worker-data">
+        <h2>'.$academic_title.' '.$title.', '.$posttitle.'</h2>';
+
+    if (!empty($structure)) {
+        $text .= '<p class="worker-place">'.$structure.'</p>';
+    }
+
+    $text .= '<p class="worker-email"><a href="mailto:'.$email.'">'.$email.'</a></p>
+        <p class="worker-phone-number">tel: '.$phone_number.'</p>    
+        <p class="worker-room">pok: '.$room.'</p>    
+        </div>
+      </div>';
+
+    // $text = '<div>';
+    // $text .= '<p>: ' . $meta['ii_room'][0] . '</p>';
+    // $text .= '<p>Telefon: ' . $meta['ii_room'][0] . '</p>';
+    // $text .= '<p>Pokój: ' . $meta['ii_room'][0] . '</p>';
+    // $text .= '</div>';
+    return $text;
+}
+add_shortcode('pracownik', 'ii_pracownik_shortcode');
+
+add_shortcode('pracownik', 'ii_pracownik_shortcode');
+
+// 
+function ii_add_taxonomies() {
+  // Add new "Locations" taxonomy to Posts
+  register_taxonomy('structure', 'pracownik', array(
+    // Hierarchical taxonomy (like categories)
+    'hierarchical' => true,
+    // This array of options controls the labels displayed in the WordPress Admin UI
+    'labels' => array(
+      'name' => 'Struktura instytutu',
+      'singular_name' => 'Struktura instytutu',
+        'menu_name'           => 'Struktura instytutu',
+        'parent_item_colon'   => 'Nadrzędna',
+        'all_items'           => 'Wszyscy',
+        'view_item'           => 'Zobacz',
+        'add_new_item'        => 'Dodaj',
+        'add_new'             => 'Dodaj',
+        'edit_item'           => 'Edytuj',
+        'update_item'         => 'Aktualizuj',
+        'search_items'        => 'Szukaj',
+        'not_found'           => 'Nie znaleziono',
+        'not_found_in_trash'  => 'Nie znaleziono'
+    ),
+    // Control the slugs used for this taxonomy
+    'rewrite' => array(
+      'slug' => 'locations', // This controls the base slug that will display before each term
+      'with_front' => false, // Don't display the category base before "/locations/"
+      'hierarchical' => true // This will allow URL's like "/locations/boston/cambridge/"
+    ),
+  ));
+}
+add_action( 'init', 'ii_add_taxonomies', 0 );
