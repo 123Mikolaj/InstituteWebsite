@@ -8,14 +8,14 @@ Author: Estarte
 License: GNU
 */
 
-// Mikołaj - funkcja pozwala dodac zakładke w menu
-// Utwórz zakładke sylabusy
-// Wyszukaj tam wszystkie sylabusy które są lub które powinny być
-// w formie jednej tabelki
 
-// Dodaj wyszukiwarkę i filtrowanie
+// Autoload PHPSpreadsheet classes
+require 'vendor/autoload.php';
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
-// Jak chcę mieć formularz to muszę go stworzyć form. To jest pusta zakładka.
+
+// Dodanie zakładki w menu
 function re_menu()
 {
     add_menu_page(
@@ -29,15 +29,17 @@ function re_menu()
     );
 
     add_submenu_page(
-        'e_start', // parent menu slug
-        'New Submenu Item', // submenu page title
-        'New Submenu Item', // submenu item title
+        're_start',
+        'New Submenu Item',
+        'New Submenu Item',
         'anage_options',
-        'new_submenu_item', // submenu page slug
-        'new_submenu_item_callback' // callback function
+        'new_submenu_item',
+        'new_submenu_item_callback'
     );
 }
 add_action('admin_menu', 're_menu');
+
+// Widok strony
 function re_start()
 {
     if ($_REQUEST['re_add'] == 'true') {
@@ -60,31 +62,34 @@ function re_start()
 
 function re_read_excel()
 {
-    include(plugin_dir_path(__FILE__) . 'Classes/PHPExcel.php');
+    require 'vendor/autoload.php';
 
+    // Ścieżka do pliku Excel
     $inputFileName = plugin_dir_path(__FILE__) . 'CB_N_2023.xlsx';
+    echo $inputFileName;
 
-    //  Read your Excel workbook
+    // Czytanie pliku Excel
     try {
-        $inputFileType = PHPExcel_IOFactory::identify($inputFileName);
-        $objReader = PHPExcel_IOFactory::createReader($inputFileType);
-        $objPHPExcel = $objReader->load($inputFileName);
+        // Zamiast PHPExcel_IOFactory używamy IOFactory z PHPSpreadsheet
+        $spreadsheet = IOFactory::load($inputFileName);
     } catch (Exception $e) {
         die('Error loading file "' . pathinfo($inputFileName, PATHINFO_BASENAME) . '": ' . $e->getMessage());
     }
 
-    //  Get worksheet dimensions
-    $sheet = $objPHPExcel->getSheet(0);
+    // Uzyskiwanie arkusza
+    $sheet = $spreadsheet->getActiveSheet();
     $highestRow = $sheet->getHighestRow();
     $highestColumn = $sheet->getHighestColumn();
-    $data = array(); // array witch data
-    //  Loop through each row of the worksheet in turn
+    $data = array(); // Tablica z danymi
+
+    // Pętla przez każdy wiersz arkusza
     for ($row = 1; $row <= $highestRow; $row++) {
-        //  Read a row of data into an array
+        // Wczytywanie wiersza danych do tablicy
         $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row, NULL, TRUE, FALSE);
         $data[] = $rowData[0];
     }
 
+    // Wyświetlanie danych
     foreach ($data as $rowData) {
         echo 'Semestr ' . $rowData[0] . ', przedmiot: ' . $rowData[1] . '<br>';
     }
@@ -94,7 +99,9 @@ function re_read_excel()
 
 function add_semesters_excel2($attachment_id, $idRocznik)
 {
-
+    require 'vendor/autoload.php';
+    include_once plugin_dir_path(__FILE__) . '../ii/semestry.php';
+    
     static $called = false;
     if ($called) return;
     $called = true;
@@ -102,133 +109,118 @@ function add_semesters_excel2($attachment_id, $idRocznik)
     // Pobierz lokalną ścieżkę załączonego pliku
     $file_path = get_attached_file($attachment_id);
 
-    // Importuj plik za pomocą PHPExcel
-    include_once(plugin_dir_path(__FILE__) . 'Classes/PHPExcel.php');
-    include_once plugin_dir_path(__FILE__) . '../ii/semestry.php';
-
-    // Identyfikacja typu pliku Excel, utworzenie odpowiedniego obiektu czytającego i załadowanie pliku Excel do obiektu PHPExcel
+    $inputFileName = plugin_dir_path(__FILE__) . 'CB_N_2023.xlsx';
+    
+    // Czytanie pliku Excel
     try {
-        $inputFileType = PHPExcel_IOFactory::identify($file_path);
-        $objReader = PHPExcel_IOFactory::createReader($inputFileType);
-        $objPHPExcel = $objReader->load($file_path);
+        $spreadsheet = IOFactory::load($file_path);
     } catch (Exception $e) {
         die('Błąd ładowania pliku "' . pathinfo($file_path, PATHINFO_BASENAME) . '": ' . $e->getMessage());
     }
 
-    // Pobierz wymiary arkusza
-    $sheet = $objPHPExcel->getSheet(0);
+
+    // Pobierz arkusz
+    $sheet = $spreadsheet->getSheet(0);
     $highestRow = $sheet->getHighestRow();
     $highestColumn = $sheet->getHighestColumn();
 
-    // Wyświetl zawartość pliku Excel
-    echo "<table border='1'>";
-    for ($row = 1; $row <= $highestRow; $row++) {
-        echo "<tr>";
-        for ($col = 'A'; $col <= $highestColumn; $col++) {
-            $cellValue = $sheet->getCell($col . $row)->getValue();
-            echo "<td>$cellValue</td>";
-        }
-        echo "</tr>";
-    }
-    echo "</table>";
-
     // Inicjalizuj tablicę danych
-    $data = array();
+    $data = [];
 
     // Przeiteruj przez każdy wiersz arkusza (zacznij od wiersza 2, aby pominąć nagłówki)
     for ($row = 2; $row <= $highestRow; $row++) {
-        // Przeczytaj wiersz danych do tablicy (valueOnly ustawione na TRUE, aby uzyskać jednowymiarową tablicę)
+        // Przeczytaj wiersz danych do tablicy
         $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row, NULL, TRUE, TRUE);
-        // Dodaj cały wiersz danych do tablicy $data
         $data[] = $rowData[0];
     }
 
-    // Teraz masz czyste dane do pracy
-
-    // Inicjalizacja zmiennych
-    $currentSemestr = 0;
-    $currentSemestrId = 0;
+    // Zainicjalizuj zmienne
+    $addedSemesters = [];
     $rocznikMeta = get_post_meta($idRocznik);
-    $currentSezon = $rocznikMeta['ii_rocznik_sezon'][0]; // zmiana na ii_rocznik_sezon
-    $currentYear = intval($rocznikMeta['ii_rocznik_rok'][0]); // zmiana na ii_rocznik_rok
-
-    $rocznikMeta = get_post_meta($idRocznik);
+    $currentSezon = $rocznikMeta['ii_rocznik_sezon'][0];
+    $initialYear = intval($rocznikMeta['ii_rocznik_rok'][0]);
     $rocznikTitle = $rocznikMeta['ii_rocznik'][0];
     $kierunekTitle = $rocznikMeta['ii_kierunek'][0];
     $trybTitle = $rocznikMeta['ii_rodzaj'][0];
+    
+    $currentYear = $initialYear;
 
-
-
-
+    if ($currentSezon == 'lato') {
     foreach ($data as $rowData) {
-
-        $semesterNumber = intval(explode(', ', $rowData[0])[0]);
-
-        if (!in_array($semesterNumber, $addedSemesters)) { // Sprawdź, czy semestr nie jest już w tablicy
-
-            $currentSemestrId = ii_add_semestr($semesterNumber, $currentSezon, $currentYear, $idRocznik, $rocznikTitle, $kierunekTitle, $trybTitle);
-
-            $addedSemesters[] = $semesterNumber; // Dodaj semestr do tablicy
-
-            // Zmień wartości sezonu i roku
-            if ($currentSezon == 'zima') {
-                $currentSezon = 'lato';
-            } else {
-                $currentSezon = 'zima';
-                $currentYear++;
-            }
+        $semesterNumber = intval($rowData[0]);
+    
+        if ($semesterNumber % 2 == 1) {
+            $currentSezon = 'lato';
+            $currentYear = $initialYear + intval(($semesterNumber - 1) / 2);
+        } else {
+            $currentSezon = 'zima';
+            $currentYear = $initialYear + intval($semesterNumber / 2);
         }
+    
+        // Dodaj semestr
+        $currentSemestrId = ii_add_semestr($semesterNumber, $currentSezon, $currentYear, $idRocznik, $rocznikTitle, $kierunekTitle, $trybTitle);
+        
+        // Dodaj przedmiot do semestru
         ii_update_przedmiot($rowData[1], $idRocznik, $currentSemestrId, $semesterNumber);
+    }
+    }else if ($currentSezon == 'zima') {
+        foreach ($data as $rowData) {
+            $semesterNumber = intval($rowData[0]);
+    
+            if ($semesterNumber % 2 == 1) {
+                $currentSezon = 'zima';
+                $currentYear = $initialYear + intval($semesterNumber / 2);
+            } else {
+                $currentSezon = 'lato';
+                $currentYear = $initialYear + intval(($semesterNumber - 1) / 2);
+            }
+    
+            // Dodaj semestr
+            $currentSemestrId = ii_add_semestr($semesterNumber, $currentSezon, $currentYear, $idRocznik, $rocznikTitle, $kierunekTitle, $trybTitle);
+            
+            // Dodaj przedmiot do semestru
+            ii_update_przedmiot($rowData[1], $idRocznik, $currentSemestrId, $semesterNumber);
+        }
     }
 }
 
 function ii_add_semestr($semesterNumber, $currentSezon, $currentYear, $idRocznik, $rocznikTitle, $kierunekTitle, $trybTitle)
 {
+    // Wstępna nazwa semestru na podstawie numeru, sezonu i roku
+    $semester_name = "Semestr $semesterNumber, $currentSezon $currentYear ($kierunekTitle $rocznikTitle $trybTitle)";
 
-
-    // Check if a semester with the same title and rocznik already exists
+    // Ustawienia argumentów wyszukiwania, aby uniknąć duplikatów
     $args = array(
-
         'post_type' => 'semestr',
         'post_status' => 'publish',
         'posts_per_page' => -1,
-        's' => "Semestr $semesterNumber, $currentSezon $currentYear ($kierunekTitle $rocznikTitle $trybTitle)",
+        's' => $semester_name,
         'meta_query' => array(
-
             array(
-
                 'key' => 'ii_rocznik',
                 'value' => $idRocznik
             ),
-
             array(
-
                 'key' => 'ii_sezon',
                 'value' => $currentSezon
             ),
-
             array(
-
                 'key' => 'ii_rok',
                 'value' => $currentYear
             )
         )
     );
-
-
+    
     $existing_semesters = get_posts($args);
-
+    
+    // Sprawdzenie, czy semestr o tej nazwie i roczniku już istnieje
     if (!empty($existing_semesters)) {
-
-        // Semester with the same title and rocznik already exists
         return $existing_semesters[0]->ID;
     } else {
-
-        // Utwórz nowy wpis semestru
+        // Utwórz nowy wpis semestru z wygenerowaną nazwą
         $semester_data = array(
-
-            'post_title' => "Semestr $semesterNumber, $currentSezon $currentYear ($kierunekTitle $rocznikTitle $trybTitle)",
-            'post_content' => '',
+            'post_title' => $semester_name,
+            'post_content' => "[semestr]",
             'post_status' => 'publish',
             'post_author' => 1,
             'post_type' => 'semestr'
@@ -248,65 +240,75 @@ function ii_add_semestr($semesterNumber, $currentSezon, $currentYear, $idRocznik
 
 function ii_update_przedmiot($subject_name, $idRocznik, $currentSemestrId, $semesterNumber)
 {
+    // Normalizujemy nazwę przedmiotu do wyszukiwania (usuwamy dodatkowe spacje i ustawiamy na małe litery)
+    $normalized_subject_name = trim(mb_strtolower($subject_name));
 
-    // Check if a subject with the same title already exists
+    // Wyszukiwanie przedmiotu na podstawie znormalizowanej nazwy
     $args = array(
-
         'post_type' => 'przedmiot',
         'post_status' => 'publish',
         'posts_per_page' => -1,
-        'title' => $subject_name
-
+        'meta_query' => array(
+            array(
+                'key' => 'ii_nazwa',
+                'value' => $normalized_subject_name,
+                'compare' => '='
+            )
+        )
     );
 
     $existing_subjects = get_posts($args);
 
+    // Sprawdzenie, czy istnieje przedmiot o pełnej nazwie (po znormalizowanej wersji `post_title`)
+    $subject_id = null;
     if (!empty($existing_subjects)) {
+        foreach ($existing_subjects as $existing_subject) {
+            if (trim(mb_strtolower($existing_subject->post_title)) === $normalized_subject_name) {
+                $subject_id = $existing_subject->ID;
+                break;
+            }
+        }
+    }
 
-        $subject_id = $existing_subjects[0]->ID;
-    } else {
-
-        // Create a new subject
+    // Jeśli nie znaleziono przedmiotu, stwórz nowy
+    if (!$subject_id) {
         $subject_data = array(
-
             'post_title' => $subject_name,
             'post_content' => '',
             'post_status' => 'publish',
             'post_author' => 1,
             'post_type' => 'przedmiot'
-
         );
 
         $subject_id = wp_insert_post($subject_data);
+        // Dodaj metadane dla nowego przedmiotu (normalizujemy zapisane dane)
+        update_post_meta($subject_id, 'ii_nazwa', $normalized_subject_name);
     }
 
-    // Tworzenie ciągu tekstowego zawierającego nazwę semestru i jego ID
-    $semestr_info = "Semestr: $semesterNumber ID: $currentSemestrId";
-
-    // Zaktualizuj metadane dla wpisu przedmiotu
-
+    // Dodaj metadane do przedmiotu
     update_post_meta($subject_id, 'ii_rok', $idRocznik);
 
-    // Store an array of semester IDs for the subject
+    // Pobierz powiązane semestry dla przedmiotu
     $semesters = get_post_meta($subject_id, 'ii_semestry', true);
-
     if (!is_array($semesters)) {
         $semesters = array();
     }
 
+    // Dodaj semestr do przedmiotu, jeśli jeszcze nie istnieje
     if (!in_array($currentSemestrId, $semesters)) {
-
         $semesters[] = $currentSemestrId;
+        update_post_meta($subject_id, 'ii_semestry', $semesters);
     }
 
-    update_post_meta($subject_id, 'ii_semestry', $semesters);
-
-    // Sprawdź, czy przedmiot jest już powiązany z semestrem
+    // Powiąż przedmiot z semestrem
     $przedmioty = get_post_meta($currentSemestrId, 'ii_przedmioty', true);
+    if (!is_array($przedmioty)) {
+        $przedmioty = array();
+    }
 
+    // Upewnij się, że nie dodajemy duplikatów
     if (!in_array($subject_id, $przedmioty)) {
-
-        // Powiąż przedmiot z semestrem
-        update_post_meta($currentSemestrId, 'ii_przedmioty', array_merge($przedmioty, array($subject_id)));
+        $przedmioty[] = $subject_id;
+        update_post_meta($currentSemestrId, 'ii_przedmioty', $przedmioty);
     }
 }

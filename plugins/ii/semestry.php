@@ -233,15 +233,15 @@ function ii_semestr_shortcode()
 {
   global $post;
 
-  // Sprawdź, czy aktualny post jest typu 'semestr'
+  // Check if the current post is of type 'semestr'
   if (!$post || $post->post_type !== 'semestr') {
     return '<p>Nie znaleziono semestru.</p>';
   }
 
-  // Pobierz ID aktualnego postu
+  // Get the current post ID
   $semester_id = $post->ID;
 
-  // Pobieranie meta danych
+  // Retrieve metadata
   $post_meta = get_post_meta($semester_id);
   $starosta = isset($post_meta['ii_starosta'][0]) ? $post_meta['ii_starosta'][0] : '';
   $harmonogram_id = isset($post_meta['ii_harmonogram'][0]) ? $post_meta['ii_harmonogram'][0] : '';
@@ -250,7 +250,7 @@ function ii_semestr_shortcode()
   $sezon = isset($post_meta['ii_sezon'][0]) ? $post_meta['ii_sezon'][0] : '';
   $rok = isset($post_meta['ii_rok'][0]) ? $post_meta['ii_rok'][0] : '';
 
-  // Generowanie HTML
+  // Generate HTML output
   $output = '<div class="semestr-details">';
   $output .= '<p><strong>Sezon:</strong> ' . esc_html($sezon) . '</p>';
   $output .= '<p><strong>Rok:</strong> ' . esc_html($rok) . '</p>';
@@ -258,13 +258,13 @@ function ii_semestr_shortcode()
   $output .= '<p><strong>Starosta:</strong> ' . ($starosta ? esc_html($starosta) : 'Brak starosty') . '</p>';
   $output .= '<p><strong>Harmonogram:</strong> <a href="' . esc_url($harmonogram_url) . '" target="_blank">' . ($harmonogram_url === '#' ? 'Brak harmonogramu' : 'Pobierz harmonogram') . '</a></p>';
 
-  // Pobieranie przedmiotów semestru
+  // Retrieve subjects associated with the semester
   $subjects = get_posts(array(
     'post_type' => 'przedmiot',
     'meta_query' => array(
       array(
         'key' => 'ii_semestry',
-        'value' => serialize($semester_id),
+        'value' => $semester_id,  // Changed to direct match
         'compare' => 'LIKE'
       )
     ),
@@ -285,7 +285,7 @@ function ii_semestr_shortcode()
       $file_url = $file_id ? wp_get_attachment_url($file_id) : '#';
 
       $output .= "<tr><td>$i</td><td><a href='" . get_permalink($subject->ID) . "'>$subject_title</a></td>";
-      $output .= "<td><a href='$file_url' target='_blank'>" . basename($file_url) . "</a></td></tr>";
+      $output .= "<td><a href='$file_url' target='_blank'>" . ($file_url === '#' ? 'Brak pliku' : basename($file_url)) . "</a></td></tr>";
 
       $i++;
     }
