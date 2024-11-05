@@ -34,6 +34,11 @@ function ii_przedmiot_meta_box_callback($post)
   <input class="upload_image_button" id="ii_sylabus_btn" type="button" class="button" value="Wybierz plik" />
   <input type="hidden" name="ii_sylabus_id" id="ii_sylabus_id" value="<?php echo esc_attr($sylabus_id); ?>">
 </div>
+<div>
+  <label>Zagadnienia do egzaminu</label>
+  <textarea name="ii_zagadnienia" rows="4"
+    style="width: 100%;"><?php echo esc_textarea(get_post_meta($post->ID, 'ii_zagadnienia', true)); ?></textarea>
+</div>
 <script type='text/javascript'>
 jQuery(document).ready(function($) {
   var wp_media_post_id = wp.media.model.settings.post.id; // Store the old id
@@ -85,6 +90,9 @@ function ii_przedmiot_meta_box_save($post_id)
   }
   if (isset($_POST['ii_sylabus_id'])) {
     update_post_meta($post_id, 'ii_file', sanitize_text_field($_POST['ii_sylabus_id']));
+  }
+  if (isset($_POST['ii_zagadnienia'])) {
+    update_post_meta($post_id, 'ii_zagadnienia', sanitize_text_field($_POST['ii_zagadnienia']));
   }
 }
 add_action('add_meta_boxes_przedmiot', 'ii_przedmiot_meta_box');
@@ -163,6 +171,7 @@ function ii_przedmiot_shortcode($atts)
   $semestry = get_post_meta($post_id, 'ii_semestry', true);
   $sylabus_id = get_post_meta($post_id, 'ii_file', true);
   $sylabus_url = $sylabus_id ? wp_get_attachment_url($sylabus_id) : '';
+  $zagadnienia = get_post_meta($post_id, 'ii_zagadnienia', true);
 
   // Start building the output
   $output = '<div class="przedmiot-details">';
@@ -188,6 +197,14 @@ function ii_przedmiot_shortcode($atts)
     $output .= '<p><strong>Sylabus:</strong> <a href="' . esc_url($sylabus_url) . '" target="_blank">' . esc_html(basename($sylabus_url)) . '</a></p>';
   } else {
     $output .= '<p>Brak sylabusu dla tego przedmiotu.</p>';
+  }
+
+  // Zagadnienia do egzaminu
+  $output .= '<h3>Zagadnienia do egzaminu</h3>';
+  if (!empty($zagadnienia)) {
+    $output .= '<p>' . esc_html($zagadnienia) . '</p>';
+  } else {
+    $output .= '<p>Brak zagadnień do egzaminu dla tego przedmiotu.</p>';
   }
 
   $output .= '</div>';
