@@ -15,6 +15,7 @@ function ii_rocznik_meta_box_callback($post)
 
   $rocznik = isset($post_meta['ii_rocznik'][0]) ? $post_meta['ii_rocznik'][0] : '';
   $kierunek = isset($post_meta['ii_kierunek'][0]) ? $post_meta['ii_kierunek'][0] : '';
+  $stopien = isset($post_meta['ii_stopien'][0]) ? $post_meta['ii_stopien'][0] : '';
   $rodzaj = isset($post_meta['ii_rodzaj'][0]) ? $post_meta['ii_rodzaj'][0] : '';
   $sylwetka_absolwenta = isset($post_meta['ii_sylwetka_absolwenta'][0]) ? $post_meta['ii_sylwetka_absolwenta'][0] : '';
   $efekty_ksztalcenia = isset($post_meta['ii_efekty_ksztalcenia'][0]) ? $post_meta['ii_efekty_ksztalcenia'][0] : '';
@@ -30,14 +31,6 @@ function ii_rocznik_meta_box_callback($post)
 <div>
   <label>Rocznik</label><br>
   <input type="text" name="ii_rocznik" value="<?php echo esc_attr($rocznik); ?>">
-</div>
-<div style="margin-top: 10px;">
-  <label>Kierunek</label><br>
-  <input type="text" name="ii_kierunek" value="<?php echo esc_attr($kierunek); ?>">
-</div>
-<div style="margin-top: 10px;">
-  <label>Rodzaj</label><br>
-  <input type="text" name="ii_rodzaj" value="<?php echo esc_attr($rodzaj); ?>">
 </div>
 <div style="margin-top: 10px;">
   <label>Sezon</label><br>
@@ -122,6 +115,7 @@ jQuery(document).ready(function($) {
 <?php
 }
 
+// Funkcjonalność do wyświetlania semestrów w metaboksie rocznika
 function ii_rocznik_semestry_meta_box_callback($post)
 {
   $post_id = $post->ID;
@@ -315,8 +309,10 @@ function ii_rocznik_meta_box_save($post_id)
   if (isset($_POST['ii_rodzaj'])) {
     update_post_meta($post_id, 'ii_rodzaj', $_POST['ii_rodzaj']);
   }
+  if (isset($_POST['ii_stopien'])) {
+    update_post_meta($post_id, 'ii_stopien', sanitize_text_field($_POST['ii_stopien']));
+  }
 
-  // Zapisz początek rocznika
   if (isset($_POST['ii_rocznik_sezon'])) {
     update_post_meta($post_id, 'ii_rocznik_sezon', $_POST['ii_rocznik_sezon']);
   }
@@ -427,3 +423,508 @@ function ii_rocznik_shortcode($atts)
 
 
 add_shortcode('rocznik', 'ii_rocznik_shortcode');
+
+// Rejestracja taksonomii dla roczników do wyświetlania na stronie Sylabusy
+function ii_register_taxonomies() {
+  // Taksonomia 'Kierunek'
+  $args_kierunek = array(
+      'hierarchical' => true,
+      'labels' => array(
+          'name'              => 'Kierunek',
+          'singular_name'     => 'Kierunek',
+          'search_items'      => 'Wyszukaj kierunek',
+          'all_items'         => 'Wszystkie kierunki',
+          'parent_item'       => 'Rodzaj kierunku',
+          'parent_item_colon' => 'Rodzaj kierunku:',
+          'edit_item'         => 'Edytuj kierunek',
+          'update_item'       => 'Zaktualizuj kierunek',
+          'add_new_item'      => 'Dodaj nowy kierunek',
+          'new_item_name'     => 'Nazwa nowego kierunku',
+          'menu_name'         => 'Kierunek',
+      ),
+      'rewrite' => array(
+          'slug' => 'kierunek',
+          'with_front' => false,
+          'hierarchical' => true,
+      ),
+      'show_ui' => true,
+      'show_admin_column' => true,
+      'query_var' => true,
+      'show_in_rest' => true,
+  );
+  register_taxonomy('kierunek', 'rocznik', $args_kierunek);
+
+  // Taksonomia 'Stopień'
+  $args_stopien = array(
+      'hierarchical' => true,
+      'labels' => array(
+          'name'              => 'Stopień',
+          'singular_name'     => 'Stopień',
+          'search_items'      => 'Wyszukaj stopień',
+          'all_items'         => 'Wszystkie stopnie',
+          'parent_item'       => 'Rodzaj stopnia',
+          'parent_item_colon' => 'Rodzaj stopnia:',
+          'edit_item'         => 'Edytuj stopień',
+          'update_item'       => 'Zaktualizuj stopień',
+          'add_new_item'      => 'Dodaj nowy stopień',
+          'new_item_name'     => 'Nazwa nowego stopnia',
+          'menu_name'         => 'Stopień',
+      ),
+      'rewrite' => array(
+          'slug' => 'stopien',
+          'with_front' => false,
+          'hierarchical' => true,
+      ),
+      'show_ui' => true,
+      'show_admin_column' => true,
+      'query_var' => true,
+      'show_in_rest' => true,
+  );
+  register_taxonomy('stopien', 'rocznik', $args_stopien);
+
+  // Taksonomia 'Rodzaj'
+  $args_rodzaj = array(
+    'hierarchical' => true,
+    'labels' => array(
+        'name'              => 'Rodzaj',
+        'singular_name'     => 'Rodzaj',
+        'search_items'      => 'Wyszukaj rodzaj',
+        'all_items'         => 'Wszystkie rodzaje',
+        'parent_item'       => 'Nadrzędny rodzaj',
+        'parent_item_colon' => 'Nadrzędny rodzaj:',
+        'edit_item'         => 'Edytuj rodzaj',
+        'update_item'       => 'Zaktualizuj rodzaj',
+        'add_new_item'      => 'Dodaj nowy rodzaj',
+        'new_item_name'     => 'Nazwa nowego rodzaju',
+        'menu_name'         => 'Rodzaj',
+    ),
+    'rewrite' => array(
+        'slug' => 'rodzaj',
+        'with_front' => false,
+        'hierarchical' => true,
+    ),
+    'show_ui' => true,
+    'show_admin_column' => true,
+    'query_var' => true,
+    'show_in_rest' => true,
+  );
+  register_taxonomy('rodzaj', 'rocznik', $args_rodzaj);
+}
+add_action('init', 'ii_register_taxonomies');
+
+
+function load_custom_scripts() {
+  wp_enqueue_script('jquery');
+}
+add_action('wp_enqueue_scripts', 'load_custom_scripts');
+
+
+// Dodajemy skrypt do obsługi AJAX
+function enqueue_sylabus_script() {
+  wp_enqueue_script('sylabus-script', plugin_dir_url(__FILE__) . 'script.js', array('jquery'), null, true);
+  wp_localize_script('sylabus-script', 'ajaxurl', admin_url('admin-ajax.php'));
+}
+add_action('wp_enqueue_scripts', 'enqueue_sylabus_script');
+
+
+// Funkcja do wyświetlania sylabusa
+function wyswietl_sylabus() {
+  // Pobranie dostępnych kierunków i stopni
+  $kierunki = get_terms(array(
+      'taxonomy' => 'kierunek',
+      'orderby' => 'name',
+      'order' => 'ASC',
+      'hide_empty' => false,
+  ));
+
+  $output = '<div class="sylabus-filter">';
+  $output .= '<h3>Sylabus</h3>';
+
+  $output .= '<div id="breadcrumbs" class="breadcrumbs">
+  <span id="breadcrumb-kierunek"></span>
+  <span id="breadcrumb-separator-kierunek" style="display: none;"> → </span>
+  <span id="breadcrumb-stopien"></span>
+  <span id="breadcrumb-separator-stopien" style="display: none;"> → </span>
+  <span id="breadcrumb-rodzaj"></span>
+  <span id="breadcrumb-separator-rodzaj" style="display: none;"> → </span>
+  <span id="breadcrumb-rocznik"></span>
+</div>';
+
+  foreach ($kierunki as $kierunek) {
+    // Pobieranie stopni powiązanych z kierunkiem
+    $stopnie = get_terms(array(
+        'taxonomy' => 'stopien',
+        'orderby' => 'name',
+        'order' => 'ASC',
+        'hide_empty' => true,
+        'tax_query' => array(
+            array(
+                'taxonomy' => 'kierunek',
+                'field' => 'term_id',
+                'terms' => $kierunek->term_id,
+                'operator' => 'IN',
+            ),
+        ),
+    ));
+
+    $output .= '<div id="kierunek-row-' . esc_attr($kierunek->term_id) . '" class="sylabus-row">';
+    $output .= '<button class="kierunek-button" data-kierunek-id="' . esc_attr($kierunek->term_id) . '">' . esc_html($kierunek->name) . '</button>';
+
+    // Stopnie
+    $output .= '<div id="stopien-row-' . esc_attr($kierunek->term_id) . '" class="sylabus-row" style="display:none;">';
+    foreach ($stopnie as $stopien) {
+        $output .= '<button class="stopien-button" data-stopien-id="' . esc_attr($stopien->term_id) . '" data-kierunek-id="' . esc_attr($kierunek->term_id) . '">' . esc_html($stopien->name) . '</button>';
+
+        // Rodzaje (stacjonarne, niestacjonarne)
+        $rodzaje = get_terms(array(
+            'taxonomy' => 'rodzaj',
+            'hide_empty' => true,
+        ));
+
+        $output .= '<div id="rodzaj-row-' . esc_attr($kierunek->term_id) . '-' . esc_attr($stopien->term_id) . '" class="sylabus-row" style="display:none;">';
+        foreach ($rodzaje as $rodzaj) {
+            $output .= '<button class="rodzaj-button" data-rodzaj-id="' . esc_attr($rodzaj->term_id) . '" data-stopien-id="' . esc_attr($stopien->term_id) . '" data-kierunek-id="' . esc_attr($kierunek->term_id) . '">' . esc_html($rodzaj->name) . '</button>';
+
+            // Pobranie roczników dla konkretnego rodzaju
+            $query_args = array(
+                'post_type' => 'rocznik',
+                'tax_query' => array(
+                    array(
+                        'taxonomy' => 'kierunek',
+                        'field' => 'term_id',
+                        'terms' => $kierunek->term_id,
+                    ),
+                    array(
+                        'taxonomy' => 'stopien',
+                        'field' => 'term_id',
+                        'terms' => $stopien->term_id,
+                    ),
+                    array(
+                        'taxonomy' => 'rodzaj',
+                        'field' => 'term_id',
+                        'terms' => $rodzaj->term_id,
+                    ),
+                ),
+                'posts_per_page' => -1,
+            );
+            $rocznik_query = new WP_Query($query_args);
+
+            if ($rocznik_query->have_posts()) {
+                $output .= '<div id="rocznik-row-' . esc_attr($kierunek->term_id) . '-' . esc_attr($stopien->term_id) . '-' . esc_attr($rodzaj->term_id) . '" class="rocznik-row" style="display:none;">';  // Ukryj początkowo
+                while ($rocznik_query->have_posts()) {
+                    $rocznik_query->the_post();
+                    // Obliczenie numeru rocznika
+                    $rocznik_year = get_rocznik_year(get_the_ID(), $stopien->name);
+
+                    if ($rocznik_year !== 'N/A') {
+                        $output .= '<button class="rocznik-button" data-rocznik-id="' . esc_attr(get_the_ID()) . '">' . esc_html('Rok ' . $rocznik_year) . '</button>';
+                    }
+                }
+                $output .= '</div>';  // Zamknięcie kontenera roczników
+            }
+
+            wp_reset_postdata();
+        }
+        $output .= '</div>'; // Zamykanie rodzaj-row
+    }
+    $output .= '</div>'; // Zamykanie stopien-row
+    $output .= '</div>'; // Zamykanie kierunek-row
+  }
+
+  $output .= '<div id="sylabus-semesters"></div>'; // Miejsce na semestry
+  $output .= '</div>'; // Zamykamy sylabus-filter
+
+  $output .= '
+  <script type="text/javascript">
+  jQuery(document).ready(function($) {
+
+      function updateBreadcrumbs(selectedData) {
+          // Resetowanie wszystkich okruszków
+          $("#breadcrumb-kierunek").text("");
+          $("#breadcrumb-stopien").text("");
+          $("#breadcrumb-rodzaj").text("");
+          $("#breadcrumb-rocznik").text("");
+          $("#breadcrumb-separator-kierunek").hide();
+          $("#breadcrumb-separator-stopien").hide();
+          $("#breadcrumb-separator-rodzaj").hide();
+          $("#breadcrumb-separator-rocznik").hide();
+
+          // Aktualizacja każdego poziomu, jeśli wybrano
+          if (selectedData.kierunek) {
+              var kierunekText = $(".kierunek-button.active").text();
+              $("#breadcrumb-kierunek").text(kierunekText);
+              $("#breadcrumb-separator-kierunek").show();
+          }
+          if (selectedData.stopien) {
+              var stopienText = $(".stopien-button.active").text();
+              $("#breadcrumb-stopien").text(stopienText);
+              $("#breadcrumb-separator-stopien").show();
+          }
+          if (selectedData.rodzaj) {
+              var rodzajText = $(".rodzaj-button.active").text();
+              $("#breadcrumb-rodzaj").text(rodzajText);
+              $("#breadcrumb-separator-rodzaj").show();
+          }
+          if (selectedData.rocznik) {
+              var rocznikText = $(".rocznik-button.active").text();
+              $("#breadcrumb-rocznik").text(rocznikText);
+              $("#breadcrumb-separator-rocznik").show();
+          }
+      }
+
+
+
+      var selectedData = {
+          kierunek: null,
+          stopien: null,
+          rodzaj: null,
+          rocznik: null
+      };
+
+      $(".kierunek-button").click(function() {
+          var kierunekId = $(this).data("kierunek-id");
+
+          // Zmieniamy klasę aktywnego przycisku
+          $(".kierunek-button").removeClass("active");
+          $(this).addClass("active");
+
+          // Ukrywamy wszystkie stopnie, rodzaje i roczniki
+          $(".stopien-row").slideUp();
+          $(".rodzaj-row").slideUp();
+          $(".rocznik-row").slideUp();
+
+          // Pokazujemy stopnie dla wybranego kierunku
+          $("#stopien-row-" + kierunekId).slideDown();
+
+          // Zapisujemy wybrany kierunek i resetujemy dalsze poziomy
+          selectedData.kierunek = kierunekId;
+          selectedData.stopien = null;
+          selectedData.rodzaj = null;
+          selectedData.rocznik = null;
+          $("#sylabus-semesters").html("");
+
+          // Aktualizacja okruszków
+          updateBreadcrumbs(selectedData);
+      });
+
+
+      // Funkcja kliknięcia na stopień
+      $(".stopien-button").click(function() {
+          var stopienId = $(this).data("stopien-id");
+          var kierunekId = $(this).data("kierunek-id");
+
+          // Zmieniamy klasę aktywnego przycisku
+          $(".stopien-button").removeClass("active");
+          $(this).addClass("active");
+
+          // Ukrywamy wszystkie rodzaje i roczniki
+          $(".rodzaj-row").slideUp();
+          $(".rocznik-row").slideUp();
+
+          // Pokazujemy rodzaje dla wybranego stopnia
+          $("#rodzaj-row-" + kierunekId + "-" + stopienId).slideDown();
+          
+          // Zapisujemy wybrany stopień
+          selectedData.stopien = stopienId;
+          selectedData.rodzaj = null; // Resetowanie rodzaju
+          selectedData.rocznik = null; // Resetowanie rocznika
+          $("#sylabus-semesters").html(""); // Czyszczenie semestrów
+
+          // Aktualizacja okruszków
+          updateBreadcrumbs(selectedData);
+      });
+
+      // Funkcja kliknięcia na rodzaj
+      $(".rodzaj-button").click(function() {
+          var rodzajId = $(this).data("rodzaj-id");
+          var stopienId = $(this).data("stopien-id");
+          var kierunekId = $(this).data("kierunek-id");
+
+          // Zmieniamy klasę aktywnego przycisku
+          $(".rodzaj-button").removeClass("active");
+          $(this).addClass("active");
+
+          // Ukrywamy roczniki dla innych rodzajów
+          $(".rocznik-row").slideUp();
+
+          // Pokazujemy roczniki dla wybranego rodzaju
+          var rodzajRowId = "#rocznik-row-" + kierunekId + "-" + stopienId + "-" + rodzajId;
+          $(rodzajRowId).slideDown();
+
+          // Zapisujemy wybrany rodzaj
+          selectedData.rodzaj = rodzajId;
+          selectedData.rocznik = null; // Resetowanie rocznika
+          $("#sylabus-semesters").html(""); // Czyszczenie semestrów
+
+          // Aktualizacja okruszków
+          updateBreadcrumbs(selectedData);
+      });
+
+      // Funkcja kliknięcia na rocznik
+      $(".rocznik-button").click(function() {
+          var rocznikId = $(this).data("rocznik-id");
+          var stopienId = selectedData.stopien;
+          var kierunekId = selectedData.kierunek;
+          var rodzajId = selectedData.rodzaj;
+
+          // Zmieniamy klasę aktywnego przycisku
+          $(".rocznik-button").removeClass("active");
+          $(this).addClass("active");
+
+          // Zapisujemy wybrany rocznik
+          selectedData.rocznik = rocznikId;
+
+          // Aktualizacja okruszków
+          updateBreadcrumbs(selectedData);
+
+          // Wysyłanie żądania AJAX po kliknięciu rocznika
+          var data = {
+              action: "get_semesters_by_rocznik",
+              kierunek: kierunekId,
+              stopien: stopienId,
+              rocznik: rocznikId,
+              rodzaj: rodzajId,
+              nonce: "' . wp_create_nonce('sylabus_nonce') . '"
+          };
+
+          $.post(ajaxurl, data, function(response) {
+              console.log("Response:", response);
+              $("#sylabus-semesters").html(response);
+          });
+      });
+  });
+</script>';
+
+  return $output;
+}
+add_shortcode('wyswietl_sylabus', 'wyswietl_sylabus');
+
+
+// Pobieranie semestrów dla wybranego rocznika
+function get_semesters_by_rocznik() {
+
+    if( !isset($_POST['nonce']) || !wp_verify_nonce( $_POST['nonce'], 'sylabus_nonce' ) ) {
+      die('Permission Denied');
+  }
+
+  if ( isset( $_POST['rocznik'] ) ) {
+      $rocznik_id = sanitize_text_field( $_POST['rocznik'] );
+      $rocznik_title = get_the_title($rocznik_id);
+  }
+  
+$query = new WP_Query(array(
+  'post_type'      => 'semestr',
+  'post_status'    => 'publish',
+  'posts_per_page' => -1,
+  'meta_query'     => array(
+      array(
+          'key'     => 'ii_rocznik',
+          'value'   => $rocznik_id,
+          'compare' => '=',
+      ),
+  ),
+));
+
+$semestry = array();
+if ($query->have_posts()) {
+  while ($query->have_posts()) {
+      $query->the_post();
+      $semestry[] = array(
+          'ID'    => get_the_ID(),
+          'title' => preg_replace('/(Semestr \d+).*/', '$1', get_the_title()),
+      );
+  }
+}
+
+// Sortowanie semestrów po numerze w tytule
+usort($semestry, function ($a, $b) {
+  $a_semestr = preg_replace('/[^0-9]/', '', $a['title']);
+  $b_semestr = preg_replace('/[^0-9]/', '', $b['title']);
+  return $a_semestr - $b_semestr;
+});
+
+if (!empty($semestry)) {
+  $output = '';
+  $output .= '<h2>' . esc_html($rocznik_title) . '</h2>';
+  foreach ($semestry as $semestr) {
+      $output .= '<div class="semestr" id="semestr_' . $semestr['ID'] . '">';
+      $output .= '<h3>' . $semestr['title'] . '</h3>';
+      $output .= '<div class="przedmioty">' . get_semester_subjects_sylabus($semestr['ID']) . '</div>';
+      $output .= '</div>';
+  }
+  echo $output;
+} else {
+  echo '<p>Brak semestrów dla wybranego rocznika.</p>';
+}
+
+wp_reset_postdata();
+wp_die();
+}
+
+
+// Funkcja do pobierania przedmiotów dla semestru
+function get_semester_subjects_sylabus($semester_id) {
+  $subjects = get_posts(array(
+    'post_type' => 'przedmiot',
+    'meta_query' => array(
+      array(
+        'key' => 'ii_semestry',
+        'value' => $semester_id,
+        'compare' => 'LIKE'
+      )
+    ),
+    'posts_per_page' => -1,
+    'cache_results' => false
+  ));
+
+  $output = '';
+
+  if (!empty($subjects)) {
+    $output .= '<table class="widefat striped">';
+    $output .= '<thead><tr><th scope="col">Nr</th><th scope="col">Przedmiot</th><th scope="col">Sylabus</th></tr></thead>';
+    $output .= '<tbody>';
+
+    $i = 1;
+    foreach ($subjects as $subject) {
+      $subject_title = get_the_title($subject->ID);
+      $file_id = get_post_meta($subject->ID, 'ii_file', true);
+      $file_url = $file_id ? wp_get_attachment_url($file_id) : '#';
+
+      $output .= "<tr><td>$i</td><td><a href='" . get_permalink($subject->ID) . "'>$subject_title</a></td>";
+      $output .= "<td><a href='{$file_url}' target='_blank'>Pobierz Sylabus</a></td></tr>";
+
+      $i++;
+    }
+
+    $output .= '</tbody></table>';
+  } else {
+    $output .= '<p>Nie znaleziono przedmiotów dla tego semestru.</p>';
+  }
+
+  return $output;
+}
+add_action('wp_ajax_get_semesters_by_rocznik', 'get_semesters_by_rocznik');
+add_action('wp_ajax_nopriv_get_semesters_by_rocznik', 'get_semesters_by_rocznik');
+
+
+// Funkcja do obliczania numeru rocznika
+function get_rocznik_year($post_id, $stopien) {
+  $current_year = date("Y");
+  $start_year = get_post_meta($post_id, 'ii_rocznik_rok', true);
+
+  if ($start_year) {
+      $year_diff = $current_year - $start_year + 1;
+
+      if ($stopien === 'I stopnia' && $year_diff <= 4 && $year_diff > 0) {
+          return $year_diff;
+      }
+
+      if ($stopien === 'II stopnia' && $year_diff <= 2 && $year_diff > 0) {
+          return $year_diff;
+      }
+      
+      return 'N/A';
+  } else {
+      return 'N/A';
+  }
+}

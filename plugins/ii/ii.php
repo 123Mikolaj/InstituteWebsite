@@ -259,6 +259,38 @@ function ii_register_post_types()
 add_action('init', 'ii_register_post_types', 0);
 
 
+// Dodanie stylów globalnych
+function enqueue_global_styles() {
+    wp_enqueue_style(
+        'plugin-global-styles',
+        plugin_dir_url(__FILE__) . 'css/style.css',
+        array(),
+        '1.0',
+        'all'
+    );
+}
+add_action('wp_enqueue_scripts', 'enqueue_global_styles');
+
+
+// Dodanie klas dla stron
+add_filter('body_class', function($classes) {
+    if (is_page(34041)) {
+        $classes[] = 'sylabusy-page';
+    }
+
+    if (is_page(11)) {
+        $classes[] = 'pracownicy-page';
+    }
+
+    if (is_page(14)) {
+        $classes[] = 'struktura-page';
+    }
+
+    return $classes;
+});
+
+
+
 include(plugin_dir_path(__FILE__) . 'pracownicy.php');
 include(plugin_dir_path(__FILE__) . 'przedmioty.php');
 include(plugin_dir_path(__FILE__) . 'roczniki.php');

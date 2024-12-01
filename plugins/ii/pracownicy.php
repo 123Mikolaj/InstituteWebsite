@@ -126,7 +126,7 @@ function ii_pracownik_meta_box_save($id_post)
 add_action('add_meta_boxes_pracownik', 'ii_pracownik_meta_box');
 add_action('save_post', 'ii_pracownik_meta_box_save');
 
-// shortcode pracownik
+// Shortcode wyświetlający konkretnego pracownika
 function ii_pracownik_shortcode()
 {
     global $post;
@@ -201,6 +201,7 @@ function ii_add_taxonomies()
 }
 add_action('init', 'ii_add_taxonomies', 0);
 
+// Shortcode wyświetlający wszystkich pracowników
 function ii_pracownicy_wszyscy_shortcode()
 {
     $output = '<div class="pracownicy-list">';
@@ -262,7 +263,7 @@ function ii_pracownicy_wszyscy_shortcode()
 }
 add_shortcode('pracownicy_wszyscy', 'ii_pracownicy_wszyscy_shortcode');
 
-
+//Shortcode wyświetlający Strukturę Instytutu
 function ii_pracownicy_struktura_shortcode()
 {
     $output = '<div class="pracownicy-struktura">';
@@ -343,46 +344,102 @@ function ii_pracownicy_struktura_shortcode()
 
     $output .= '</div>';
 
-    // Katedry
-    $output .= '<div class="pracownicy-katedry">';
-    $output .= '<h1>Katedry</h1>';
+// Katedry
+$output .= '<div class="pracownicy-katedry">';
+$output .= '<h1>Katedry</h1>';
 
-    $terms = get_terms(array(
-        'taxonomy' => 'structure',
-        'hide_empty' => false,
-    ));
+$terms = get_terms(array(
+    'taxonomy' => 'structure',
+    'hide_empty' => false,
+));
 
-    if (!empty($terms) && !is_wp_error($terms)) {
-        foreach ($terms as $term) {
-            $output .= '<h2>' . esc_html($term->name) . '</h2>';
+if (!empty($terms) && !is_wp_error($terms)) {
+    $output .= '<table style="width: 100%;">';
 
-            // Pobieranie kierownika katedry
-            $args_kierownik = array(
-                'post_type' => 'pracownik',
-                'posts_per_page' => 1,
-                'tax_query' => array(
-                    array(
-                        'taxonomy' => 'structure',
-                        'field' => 'term_id',
-                        'terms' => $term->term_id,
-                    ),
+    $term_count = count($terms);
+    for ($i = 0; $i < $term_count; $i += 2) {
+        $output .= '<tr>';
+
+        $output .= '<td style="vertical-align: top;">';
+        $output .= '<h2>' . esc_html($terms[$i]->name) . '</h2>';
+
+        $args_kierownik = array(
+            'post_type' => 'pracownik',
+            'posts_per_page' => 1,
+            'tax_query' => array(
+                array(
+                    'taxonomy' => 'structure',
+                    'field' => 'term_id',
+                    'terms' => $terms[$i]->term_id,
                 ),
-                'meta_query' => array(
-                    array(
-                        'key' => 'ii_structure_position',
-                        'value' => 'kierownik',
-                        'compare' => '=',
-                    ),
+            ),
+            'meta_query' => array(
+                array(
+                    'key' => 'ii_structure_position',
+                    'value' => 'kierownik',
+                    'compare' => '=',
                 ),
-            );
+            ),
+        );
 
+        $query_kierownik = new WP_Query($args_kierownik);
+        if ($query_kierownik->have_posts()) {
+            while ($query_kierownik->have_posts()) {
+                $query_kierownik->the_post();
+                $meta = get_post_meta(get_the_ID());
+                $output .= '<p>' . esc_html($meta['ii_academic_title'][0]) . ' ' . esc_html(get_the_title()) . ' (Kierownik katedry)</p>';
+            }
+            wp_reset_postdata();
+        } else {
+            $output .= '<p>Brak kierownika katedry.</p>';
+        }
+
+        $args_pozostali = array(
+            'post_type' => 'pracownik',
+            'posts_per_page' => -1,
+            'tax_query' => array(
+                array(
+                    'taxonomy' => 'structure',
+                    'field' => 'term_id',
+                    'terms' => $terms[$i]->term_id,
+                ),
+            ),
+            'meta_query' => array(
+                array(
+                    'key' => 'ii_structure_position',
+                    'value' => 'kierownik',
+                    'compare' => '!=',
+                ),
+            ),
+            'orderby' => 'meta_value',
+            'meta_key' => 'ii_sort',
+            'order' => 'ASC',
+        );
+
+        $query_pozostali = new WP_Query($args_pozostali);
+        if ($query_pozostali->have_posts()) {
+            while ($query_pozostali->have_posts()) {
+                $query_pozostali->the_post();
+                $meta = get_post_meta(get_the_ID());
+                $output .= '<p>' . esc_html($meta['ii_academic_title'][0]) . ' ' . esc_html(get_the_title()) . ' ' . esc_html($meta['ii_posttitle'][0]) . '</p>';
+            }
+            wp_reset_postdata();
+        } else {
+            $output .= '<p>Brak pozostałych pracowników katedry.</p>';
+        }
+        
+        $output .= '</td>';
+
+        if (isset($terms[$i + 1])) {
+            $output .= '<td style="vertical-align: top;">';
+            $output .= '<h2>' . esc_html($terms[$i + 1]->name) . '</h2>';
+
+            $args_kierownik['tax_query'][0]['terms'] = $terms[$i + 1]->term_id;
             $query_kierownik = new WP_Query($args_kierownik);
-
             if ($query_kierownik->have_posts()) {
                 while ($query_kierownik->have_posts()) {
                     $query_kierownik->the_post();
                     $meta = get_post_meta(get_the_ID());
-
                     $output .= '<p>' . esc_html($meta['ii_academic_title'][0]) . ' ' . esc_html(get_the_title()) . ' (Kierownik katedry)</p>';
                 }
                 wp_reset_postdata();
@@ -390,48 +447,34 @@ function ii_pracownicy_struktura_shortcode()
                 $output .= '<p>Brak kierownika katedry.</p>';
             }
 
-            // Pobieranie pozostałych pracowników katedry (nie licząc kierownika)
-            $args_pozostali = array(
-                'post_type' => 'pracownik',
-                'posts_per_page' => -1,
-                'tax_query' => array(
-                    array(
-                        'taxonomy' => 'structure',
-                        'field' => 'term_id',
-                        'terms' => $term->term_id,
-                    ),
-                ),
-                'meta_query' => array(
-                    array(
-                        'key' => 'ii_structure_position',
-                        'value' => 'kierownik',
-                        'compare' => '!=', // Pobieramy pracowników, którzy nie są kierownikami
-                    ),
-                ),
-                'orderby' => 'meta_value', // Sortowanie po nazwisku (ii_sort)
-                'meta_key' => 'ii_sort',
-                'order' => 'ASC',
-            );
-
+            $args_pozostali['tax_query'][0]['terms'] = $terms[$i + 1]->term_id;
             $query_pozostali = new WP_Query($args_pozostali);
-
             if ($query_pozostali->have_posts()) {
                 while ($query_pozostali->have_posts()) {
                     $query_pozostali->the_post();
                     $meta = get_post_meta(get_the_ID());
-
                     $output .= '<p>' . esc_html($meta['ii_academic_title'][0]) . ' ' . esc_html(get_the_title()) . ' ' . esc_html($meta['ii_posttitle'][0]) . '</p>';
                 }
                 wp_reset_postdata();
             } else {
                 $output .= '<p>Brak pozostałych pracowników katedry.</p>';
             }
+
+            $output .= '</td>';
+        } else {
+            $output .= '<td></td>';
         }
-    } else {
-        $output .= '<p>Brak katedr.</p>';
+
+        $output .= '</tr>';
     }
 
-    $output .= '</div>'; // Koniec katedr
+    $output .= '</table>';
+} else {
+    $output .= '<p>Brak katedr.</p>';
+}
+
+$output .= '</div>';
+
 
 
     // Administracja
@@ -516,9 +559,9 @@ function ii_pracownicy_struktura_shortcode()
         $output .= '<p>Brak pracowników obsługi technicznej.</p>';
     }
 
-    $output .= '</div>'; // Koniec administracji
+    $output .= '</div>';
 
-    $output .= '</div>'; // Koniec całej struktury
+    $output .= '</div>';
 
     return $output;
 }
